@@ -9,4 +9,23 @@ VALUES ('Salt', 'cups', 0.05), ('Water', 'gal', 0.66),
     ('Garlic', 'cloves', 0.4), ('Whole peppercorns','tbsp', 0.13),
     ('Dried juniper berries', 'tbsp', 0.13), ('Fresh rosemary','tbsp', 0.13),
     ('Thyme', 'tbsp', 0.06), ('Brine time','hours', 2.4),
-    ('Roast time','minutes', 15)
+    ('Roast time','minutes', 15);
+GO
+
+CREATE USER azfunction
+FROM LOGIN azfunction
+WITH DEFAULT_SCHEMA=dbo;
+GO
+
+EXEC sp_addrolemember 'db_datareader', 'azfunction';
+
+EXEC sp_addrolemember 'db_datawriter', 'azfunction';
+
+
+CREATE ROLE serverless_app;
+EXEC sp_addrolemember 'serverless_app', 'azfunction';
+
+GRANT EXECUTE ON OBJECT ::dbo.calculateRecipe  
+    TO serverless_app;
+
+
