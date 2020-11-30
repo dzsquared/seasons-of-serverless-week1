@@ -5,8 +5,6 @@ import os
 import time
 import azure.functions as func
 
-# Driver={ODBC Driver 13 for SQL Server};Server=tcp:serverless-fun.database.windows.net,1433;Database=serverless1;Uid=sqladmin;Pwd={your_password_here};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;
-
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
@@ -21,15 +19,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         turkeySize = float(req.params.get('turkey'))
         logging.info(str(turkeySize))
     except:
-        messages.append('Use the query string "turkey" to send a turkey weight.')
+        messages.append('Use the query string "turkey" to send a turkey weight in lbs.')
         return generateHttpResponse(ingredients, messages, 400)
 
     try:
-        ingredients = getIngredients(sqlConnectionString, turkeySize)
+        sqlConnection = getSqlConnection(sqlConnectionString)
+        ingredients = getIngredients(sqlConnection, turkeySize)
     except pyodbc.DatabaseError:
-        time.sleep(45)
-        ingredients = getIngredients(sqlConnectionString, turkeySize)
-        messages.append('Thanks for waithing, the database had to be started.')
+        messages.append('Unable to connect to the database, please try again later.')
+        statusCode=500
 
     return generateHttpResponse(ingredients, messages, statusCode)
 
@@ -39,14 +37,24 @@ def generateHttpResponse(ingredients, messages, statusCode):
         status_code=statusCode
     )
 
+def getSqlConnection(sqlConnectionString):
+    i = 0
+    while i < 6:
+        logging.info('contacting DB')
+        try:
+            sqlConnection = pyodbc.connect(sqlConnectionString)
+        except pyodbc.DatabaseError:
+            time.sleep(10) # wait 10s before retry
+            i+=1
+        else:
+            return sqlConnection
+    raise pyodbc.DatabaseError('Failed to connect after retries')
 
-def getIngredients(sqlConnectionString, turkeySize):
-    logging.info('contacting DB')
+def getIngredients(sqlConnection, turkeySize):
+    logging.info('getting ingredients')
     results = []
-    sqlConnection = pyodbc.connect(sqlConnectionString)
     sqlCursor = sqlConnection.cursor()
     sqlCursor.execute('EXEC calculateRecipe '+str(turkeySize))
-    columns = [column[0] for column in sqlCursor.description]
-    for row in sqlCursor.fetchall():
-        results.append(dict(zip(columns, row)))
+    results = json.loads(sqlCursor.fetchone()[0])
+    sqlCursor.close()
     return results
