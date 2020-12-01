@@ -22,12 +22,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         messages.append('Use the query string "turkey" to send a turkey weight in lbs.')
         return generateHttpResponse(ingredients, messages, 400)
 
-    try:
-        sqlConnection = getSqlConnection(sqlConnectionString)
-        ingredients = getIngredients(sqlConnection, turkeySize)
-    except pyodbc.DatabaseError:
-        messages.append('Unable to connect to the database, please try again later.')
-        statusCode=500
+    sqlConnection = getSqlConnection(sqlConnectionString)
+    ingredients = getIngredients(sqlConnection, turkeySize)
 
     return generateHttpResponse(ingredients, messages, statusCode)
 
@@ -43,12 +39,11 @@ def getSqlConnection(sqlConnectionString):
         logging.info('contacting DB')
         try:
             sqlConnection = pyodbc.connect(sqlConnectionString)
-        except pyodbc.DatabaseError:
+        except:
             time.sleep(10) # wait 10s before retry
             i+=1
         else:
             return sqlConnection
-    raise pyodbc.DatabaseError('Failed to connect after retries')
 
 def getIngredients(sqlConnection, turkeySize):
     logging.info('getting ingredients')
