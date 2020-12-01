@@ -12,6 +12,11 @@ VALUES ('Salt', 'cups', 0.05), ('Water', 'gal', 0.66),
     ('Roast time','minutes', 15);
 GO
 
+-- if executing this on your own database
+-- add the login azfunction to the server by executing
+-- CREATE LOGIN azfunction WITH PASSWORD='##your##password##here##';
+-- against master db
+
 CREATE USER azfunction
 FROM LOGIN azfunction
 WITH DEFAULT_SCHEMA=dbo;
