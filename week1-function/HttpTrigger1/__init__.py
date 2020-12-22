@@ -51,5 +51,6 @@ def getIngredients(sqlConnection, turkeySize):
     sqlCursor = sqlConnection.cursor()
     sqlCursor.execute('EXEC calculateRecipe '+str(turkeySize))
     results = json.loads(sqlCursor.fetchone()[0])
+    sqlCursor.commit()
     sqlCursor.close()
     return results
